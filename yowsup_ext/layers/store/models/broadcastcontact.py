@@ -1,4 +1,4 @@
-from store import db
+from yowsup_ext.layers.store import db
 import peewee
 from contact import Contact
 from broadcast import Broadcast
