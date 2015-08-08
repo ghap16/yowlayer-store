@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from setuptools import setup, find_packages
-import store
+from yowsup_ext.layers import store
 
 deps = ['yowsup2', 'peewee']
 
 setup(
-    name='yowsup.layers.store',
+    name='yowlayer-store',
     version=store.__version__,
     url='http://github.com/tgalal/yowlayer-store/',
     license='GPL-3+',
@@ -18,7 +18,7 @@ setup(
     packages= find_packages(),
     include_package_data=True,
     platforms='any',
-    namespace_packages = ['yowsup.layers'],
+    namespace_packages = ['yowsup_ext'],
     #test_suite='',
     classifiers = [
         'Programming Language :: Python',
