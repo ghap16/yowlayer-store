@@ -1,14 +1,13 @@
-from yowsup.layers import YowLayer
+from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.common.tools import StorageTools
 import peewee
 import db
 import logging
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 DB_NAME = StorageTools.constructPath("yow.db")
 
-
-class SqliteStorageLayer(YowLayer):
+class SqliteStorageLayer(YowInterfaceLayer):
     def __init__(self):
         super(SqliteStorageLayer, self).__init__()
         self.db = peewee.SqliteDatabase(DB_NAME, threadlocals=True)
@@ -37,3 +36,20 @@ class SqliteStorageLayer(YowLayer):
         ]
         logger.debug("setting up models")
         self.db.create_tables(models, True)
+
+    @ProtocolEntityCallback("message")
+    def onMessage(self, messageProtocolEntity):
+        '''
+        Should store all incoming messages. Must afterwards send the entity to upper layers
+        :param messageProtocolEntity:
+        :return:
+        '''
+        self.toUpper(messageProtocolEntity)
+
+    def send(self, protocolEntity):
+        '''
+        Store what should be stored from incoming data and then forward to lower layers
+        :param protocolEntity:
+        :return:
+        '''
+        self.toLower(protocolEntity)
