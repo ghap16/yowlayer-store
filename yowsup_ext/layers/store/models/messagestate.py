@@ -8,3 +8,21 @@ class MessageState(db.get_base_model()):
     message = peewee.ForeignKeyField(Message)
     state = peewee.ForeignKeyField(State)
     contact = peewee.ForeignKeyField(Contact, null=True)
+
+    @classmethod
+    def set_received(cls, message):
+        messageState = MessageState(message = message, state = State.get_received())
+        messageState.save()
+
+    @classmethod
+    def set_sent_queued(cls, message):
+        messageState = MessageState(message = message, state = State.get_sent_queued())
+        messageState.save()
+
+    @classmethod
+    def set_sent_delivered(cls, message, contact = None):
+        pass
+
+    @classmethod
+    def set_sent_read(cls, message, contact = None):
+        pass

@@ -4,9 +4,9 @@ import datetime
 from contact import Contact
 
 class Group(db.get_base_model()):
-    jid = peewee.CharField()
-    picture = peewee.BlobField()
-    subject = peewee.CharField()
-    subject_owner_id = peewee.ForeignKeyField(Contact)
-    subject_time = peewee.DateTimeField()
+    jid = peewee.CharField(null=False)
+    picture = peewee.BlobField(null=True)
+    subject = peewee.CharField(null=True)
+    subject_owner_id = peewee.ForeignKeyField(Contact, null=True)
+    subject_time = peewee.DateTimeField(null=True)
     created = peewee.DateTimeField(default=datetime.datetime.now())
