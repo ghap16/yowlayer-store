@@ -77,7 +77,7 @@ class YowStorageLayer(YowInterfaceLayer):
         conversation = self.getConversation(jid)
         messages = Message.select()\
             .where(Message.conversation == conversation)\
-            .order_by(Message.id)\
+            .order_by(Message.id.desc())\
             .limit(limit)\
             .offset(offset)
         return messages
@@ -103,6 +103,7 @@ class YowStorageLayer(YowInterfaceLayer):
         :return:
         '''
         message = self.storeMessage(messageProtocolEntity)
+        MessageState.set_received(message)
         self.toUpper(messageProtocolEntity)
 
     def storeMessage(self, messageProtocolEntity):
