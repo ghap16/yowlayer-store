@@ -6,23 +6,7 @@ import datetime
 import peewee
 import db
 import logging
-
-#
-# StateModel = None
-# MessageModel = None
-# MessageStateModel = None
-# # ConversationModel = None
-# ContactModel = None
-# GroupModel = None
-# GroupContactModel = None
-# MediaTypeModel = None
-# MediaModel = None
-# BroadcastModel = None
-# BroadcastContactModel = None
-# StatusModel = None
-#
-# Conversation = None
-
+import sys
 
 Models = State = Message = MessageState = Conversation = Contact = \
     Group= GroupContact = MediaType = Media = Broadcast = \
@@ -98,13 +82,49 @@ class YowStorageLayer(YowInterfaceLayer):
     @ProtocolEntityCallback("message")
     def onMessage(self, messageProtocolEntity):
         '''
-        Should store all incoming messages. Must afterwards send the entity to upper layers
+        Should store alpl incoming messages. Must afterwards send the entity to upper layers
         :param messageProtocolEntity:
         :return:
         '''
         message = self.storeMessage(messageProtocolEntity)
         MessageState.set_received(message)
         self.toUpper(messageProtocolEntity)
+
+    @ProtocolEntityCallback("ack")
+    def onAck(self, incomingAckProtocolEntity):
+        '''
+        For when a server acks our outgoing message
+        :param incomingAckProtocolEntity:
+        :return:
+        '''
+        if incomingAckProtocolEntity.getClass() == "message":
+            '''handle'''
+            message = self.getMessageByGenId(incomingAckProtocolEntity.getId())
+            MessageState.set_sent(message)
+
+    @ProtocolEntityCallback("receipt")
+    def onReceipt(self, receiptProtocolEntity):
+        '''
+        Update message status to delivered or read
+        :param receiptProtocolEntity:
+        :return:
+        '''
+
+        ids = [receiptProtocolEntity.getId()] if receiptProtocolEntity.items is None else receiptProtocolEntity.items
+
+        for id_ in ids:
+            message = self.getMessageByGenId(id_)
+            if not receiptProtocolEntity.getType():
+                MessageState.set_received(message)
+            elif receiptProtocolEntity.getType() == "read":
+                contact = None
+                if receiptProtocolEntity.getParticipant():
+                    contact = Contact.get_or_create(jid = receiptProtocolEntity.getParticipant())
+                MessageState.set_sent_read(message, contact)
+
+
+    def getMessageByGenId(self, genId):
+        return Message.get(Message.id_gen == genId)
 
     def storeMessage(self, messageProtocolEntity):
         if messageProtocolEntity.isOutgoing():
@@ -117,6 +137,7 @@ class YowStorageLayer(YowInterfaceLayer):
 
     def storeTextMessage(self, textMessageProtocolEntity, conversation):
         message = Message(
+            id_gen = textMessageProtocolEntity.getId(),
             conversation = conversation,
             content = textMessageProtocolEntity.getBody(),
             t_sent = datetime.datetime.fromtimestamp(textMessageProtocolEntity.getTimestamp())
@@ -134,5 +155,13 @@ class YowStorageLayer(YowInterfaceLayer):
         if protocolEntity.__class__ == TextMessageProtocolEntity:
             message = self.storeMessage(protocolEntity)
             MessageState.set_sent_queued(message)
+        elif protocolEntity.__class__ == "Media":
+            pass
+        elif protocolEntity.__class__ == "GetSyncIqProtocolEntity":
+            #@@TODO intercept, do self._sendIq and store the results in contacts
+            pass
+        elif protocolEntity.__class__ == "receipt":
+            #@@TODO intercept
+            pass
 
         self.toLower(protocolEntity)

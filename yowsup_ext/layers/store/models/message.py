@@ -7,6 +7,7 @@ from media import Media
 
 
 class Message(db.get_base_model()):
+    id_gen = peewee.CharField(null=False)
     conversation = peewee.ForeignKeyField(Conversation)
     created = peewee.DateTimeField(default=datetime.datetime.now())
     t_sent = peewee.DateTimeField(default=datetime.datetime.now())

@@ -15,6 +15,12 @@ class MessageState(db.get_base_model()):
         messageState.save()
 
     @classmethod
+    def set_sent(cls, message):
+        messageState = MessageState.get_or_create(message = message, state = State.get_sent_queued())[0]
+        messageState.state = State.get_sent()
+        messageState.save()
+
+    @classmethod
     def set_sent_queued(cls, message):
         messageState = MessageState(message = message, state = State.get_sent_queued())
         messageState.save()

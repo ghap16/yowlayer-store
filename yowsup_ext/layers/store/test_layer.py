@@ -1,6 +1,7 @@
 import unittest
 from yowsup.stacks.yowstack import YowStack
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
+from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEntity
 from yowsup_ext.layers import YowStorageLayer
 import time
 
@@ -11,19 +12,51 @@ class YowStorageLayerTest(unittest.TestCase):
     #def test_reset(self):
     #    self.stack.getLayerInterface(YowStorageLayer).reset()
     #
-    def test_storeOutgoingTextMessages(self):
-        from yowsup_ext.layers.store.models.messagestate import MessageState
-        from yowsup_ext.layers.store.models.message import Message
-        from yowsup_ext.layers.store.models.state import State
+
+
+    def sendMessage(self):
         msgContent = "Hello World"
         msgJid = "aaa@s.whatsapp.net"
         msg = TextMessageProtocolEntity(msgContent, to=msgJid)
         self.stack.send(msg)
+        return msg
 
-        message = self.stack.getLayerInterface(YowStorageLayer).getMessages(msgJid, limit=1)[0]
+    def test_incomingAck(self):
+        from yowsup_ext.layers.store.models.state import State
+        message = self.sendMessage()
 
-        self.assertEqual(message.content, msgContent)
-        self.assertEqual(message.conversation.contact.jid, msgJid)
+        ack = IncomingAckProtocolEntity(message.getId(), "message", message.getTo(), str(int(time.time())))
+        self.stack.receive(ack)
+
+        state = self.getMessageState(message.getId())
+        self.assertEqual(state.name, State.get_sent().name)
+
+
+    def getMessageState(self, messageGenId):
+        from yowsup_ext.layers.store.models.messagestate import MessageState
+        from yowsup_ext.layers.store.models.message import Message
+        from yowsup_ext.layers.store.models.state import State
+
+        message = self.stack.getLayerInterface(YowStorageLayer).getMessageByGenId(messageGenId)
+
+        states = (State
+            .select()
+            .join(MessageState)
+            .join(Message)
+            .where(Message.id == message.id))
+
+        return states[0]
+
+    def test_storeOutgoingTextMessages(self):
+        from yowsup_ext.layers.store.models.messagestate import MessageState
+        from yowsup_ext.layers.store.models.message import Message
+        from yowsup_ext.layers.store.models.state import State
+        msg = self.sendMessage()
+
+        message = self.stack.getLayerInterface(YowStorageLayer).getMessages(msg.getTo(), limit=1)[0]
+
+        self.assertEqual(message.content, msg.getBody())
+        self.assertEqual(message.conversation.contact.jid, msg.getTo())
         states = (State
             .select()
             .join(MessageState)
