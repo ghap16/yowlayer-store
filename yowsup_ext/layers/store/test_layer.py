@@ -3,6 +3,7 @@ from yowsup.stacks.yowstack import YowStack
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
 from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEntity
 from yowsup_ext.layers import YowStorageLayer
+from yowsup.layers.protocol_contacts.protocolentities import ResultSyncIqProtocolEntity, GetSyncIqProtocolEntity
 import time
 
 class YowStorageLayerTest(unittest.TestCase):
@@ -91,3 +92,24 @@ class YowStorageLayerTest(unittest.TestCase):
             .where(Message.id == message.id))
 
         self.assertEqual(states[0].name, State.get_received().name)
+
+    def test_contactsSync(self):
+        from yowsup_ext.layers.store.models.contact import Contact
+        inNumbers = {
+            "492743103668": "492743103668@s.whatsapp.net",
+            "4915225256022": "4915225256022@s.whatsapp.net"
+        }
+
+        getSyncProtocolEntity = GetSyncIqProtocolEntity([inNumbers.keys()])
+        self.stack.send(getSyncProtocolEntity)
+
+
+        outNumbers = {}
+        invalidNumbers = []
+        resultSync = ResultSyncIqProtocolEntity(getSyncProtocolEntity.getId(), "1.2341", "0",
+        True, "12345", inNumbers, outNumbers, invalidNumbers)
+        self.stack.receive(resultSync)
+
+
+        for number, jid  in inNumbers.items():
+            Contact.get(jid = jid, number = number)

@@ -1,5 +1,6 @@
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
+from yowsup.layers.protocol_contacts.protocolentities import GetSyncIqProtocolEntity
 from yowsup.common.tools import StorageTools
 from layer_interface import StorageLayerInterface
 import datetime
@@ -145,6 +146,12 @@ class YowStorageLayer(YowInterfaceLayer):
         message.save()
         return message
 
+    def storeContactsSyncResult(self, resultSyncIqProtocolEntity, originalGetSyncProtocolEntity):
+        for number, jid in resultSyncIqProtocolEntity.inNumbers.items():
+            Contact.get_or_create(number = number, jid = jid)
+
+        self.toUpper(resultSyncIqProtocolEntity)
+
     def send(self, protocolEntity):
         '''
         Store what should be stored from incoming data and then forward to lower layers
@@ -157,9 +164,8 @@ class YowStorageLayer(YowInterfaceLayer):
             MessageState.set_sent_queued(message)
         elif protocolEntity.__class__ == "Media":
             pass
-        elif protocolEntity.__class__ == "GetSyncIqProtocolEntity":
-            #@@TODO intercept, do self._sendIq and store the results in contacts
-            pass
+        elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
+            self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == "receipt":
             #@@TODO intercept
             pass
