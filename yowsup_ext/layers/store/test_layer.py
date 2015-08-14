@@ -2,7 +2,7 @@ import unittest
 from yowsup.stacks.yowstack import YowStack
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
 from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEntity
-from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
+from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity, OutgoingReceiptProtocolEntity
 from yowsup_ext.layers import YowStorageLayer
 from yowsup.layers.protocol_contacts.protocolentities import ResultSyncIqProtocolEntity, GetSyncIqProtocolEntity
 import time
@@ -21,6 +21,18 @@ class YowStorageLayerTest(unittest.TestCase):
         msgJid = "aaa@s.whatsapp.net"
         msg = TextMessageProtocolEntity(msgContent, to=msgJid)
         self.stack.send(msg)
+        return msg
+
+    def sendReceipt(self, message, read = False, participant = None):
+        receipt = OutgoingReceiptProtocolEntity(message.getId(), message.getTo(), read)
+        self.stack.send(receipt)
+        return receipt
+
+    def receiveMessage(self):
+        msgContent = "Received message"
+        msgJid = "bbb@s.whatsapp.net"
+        msg = TextMessageProtocolEntity(msgContent, _from = msgJid)
+        self.stack.receive(msg)
         return msg
 
     def receiveAck(self, message):
@@ -99,9 +111,9 @@ class YowStorageLayerTest(unittest.TestCase):
         return states[0]
 
     def test_storeOutgoingTextMessages(self):
+        from yowsup_ext.layers.store.models.state import State
         from yowsup_ext.layers.store.models.messagestate import MessageState
         from yowsup_ext.layers.store.models.message import Message
-        from yowsup_ext.layers.store.models.state import State
         msg = self.sendMessage()
 
         message = self.stack.getLayerInterface(YowStorageLayer).getMessages(msg.getTo(), limit=1)[0]
@@ -116,25 +128,31 @@ class YowStorageLayerTest(unittest.TestCase):
 
         self.assertEqual(states[0], State.get_sent_queued())
 
+    # def test_incomingMessageReceipts(self):
+    #     from yowsup_ext.layers.store.models.state import State
+    #     message = self.receiveMessage()
+    #     self.sendReceipt(message)
+    #
+    #     state = self.getMessageState(message.getId())
+    #
+    #     self.assertEqual(state, State.get_received())
+    #
+    #     self.sendReceipt(message, True)
+    #
+    #     self.assertEqual(self.getMessageState(message.getId()), State.get_received_read())
+
+
     def test_storeIncomingTextMessage(self):
         from yowsup_ext.layers.store.models.messagestate import MessageState
         from yowsup_ext.layers.store.models.message import Message
         from yowsup_ext.layers.store.models.state import State
 
-        msgContent = "INCOMING HELLO WORLD"
-        msgJid = "aaa@s.whatsapp.net"
-        timestamp = int(time.time())
-        notify = "aaa"
-        offline = False
-        id_ = "message_id"
+        msg = self.receiveMessage()
 
-        msg = TextMessageProtocolEntity(msgContent, _id=id_, offline=offline, notify=notify, _from=msgJid, timestamp=timestamp)
-        self.stack.receive(msg)
+        message = Message.get(id_gen = msg.getId())
 
-        message = self.stack.getLayerInterface(YowStorageLayer).getMessages(msgJid, limit=1)[0]
-
-        self.assertEqual(message.content, msgContent)
-        self.assertEqual(message.conversation.contact.jid, msgJid)
+        self.assertEqual(message.content, msg.getBody())
+        self.assertEqual(message.conversation.contact.jid, msg.getFrom())
         states = (State
             .select()
             .join(MessageState)
