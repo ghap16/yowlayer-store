@@ -2,6 +2,7 @@ import unittest
 from yowsup.stacks.yowstack import YowStack
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
 from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEntity
+from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
 from yowsup_ext.layers import YowStorageLayer
 from yowsup.layers.protocol_contacts.protocolentities import ResultSyncIqProtocolEntity, GetSyncIqProtocolEntity
 import time
@@ -22,15 +23,34 @@ class YowStorageLayerTest(unittest.TestCase):
         self.stack.send(msg)
         return msg
 
-    def test_incomingAck(self):
-        from yowsup_ext.layers.store.models.state import State
-        message = self.sendMessage()
-
+    def receiveAck(self, message):
         ack = IncomingAckProtocolEntity(message.getId(), "message", message.getTo(), str(int(time.time())))
         self.stack.receive(ack)
 
+    def test_incomingAck(self):
+        from yowsup_ext.layers.store.models.state import State
+        message = self.sendMessage()
+        self.receiveAck(message)
+
         state = self.getMessageState(message.getId())
         self.assertEqual(state.name, State.get_sent().name)
+
+    def test_incomingReceipt(self):
+        from yowsup_ext.layers.store.models.state import State
+        message = self.sendMessage()
+        ack = self.receiveAck(message)
+
+        receipt = IncomingReceiptProtocolEntity(message.getId(), message.getTo(), str(int(time.time())))
+        self.stack.receive(receipt)
+
+        state = self.getMessageState(message.getId())
+        self.assertEqual(state.name, State.get_sent_delivered().name)
+
+        receipt.type = "read"
+
+        self.stack.receive(receipt)
+        state = self.getMessageState(message.getId())
+        self.assertEqual(state.name, State.get_sent_read().name)
 
 
     def getMessageState(self, messageGenId):

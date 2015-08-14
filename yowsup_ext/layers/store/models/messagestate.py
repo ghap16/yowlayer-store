@@ -27,8 +27,18 @@ class MessageState(db.get_base_model()):
 
     @classmethod
     def set_sent_delivered(cls, message, contact = None):
-        pass
+        if contact:
+            messageState = MessageState.get(message = message, contact = contact)
+        else:
+            messageState = MessageState.get(message = message)
+        messageState.state = State.get_sent_delivered()
+        messageState.save()
 
     @classmethod
     def set_sent_read(cls, message, contact = None):
-        pass
+        if contact:
+            messageState = MessageState.get(message = message, contact = contact)
+        else:
+            messageState = MessageState.get(message = message)
+        messageState.state = State.get_sent_read()
+        messageState.save()

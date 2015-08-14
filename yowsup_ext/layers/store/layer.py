@@ -1,6 +1,7 @@
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
 from yowsup.layers.protocol_contacts.protocolentities import GetSyncIqProtocolEntity
+from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
 from yowsup.common.tools import StorageTools
 from layer_interface import StorageLayerInterface
 import datetime
@@ -116,7 +117,7 @@ class YowStorageLayer(YowInterfaceLayer):
         for id_ in ids:
             message = self.getMessageByGenId(id_)
             if not receiptProtocolEntity.getType():
-                MessageState.set_received(message)
+                MessageState.set_sent_delivered(message)
             elif receiptProtocolEntity.getType() == "read":
                 contact = None
                 if receiptProtocolEntity.getParticipant():
