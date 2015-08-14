@@ -52,6 +52,36 @@ class YowStorageLayerTest(unittest.TestCase):
         state = self.getMessageState(message.getId())
         self.assertEqual(state.name, State.get_sent_read().name)
 
+    def test_incomingReceipt_multi(self):
+        from yowsup_ext.layers.store.models.state import State
+
+        messages = [self.sendMessage(), self.sendMessage(), self.sendMessage()]
+
+        #get acks
+        for message in messages:
+            self.receiveAck(message)
+
+        #get receipt
+        receipt = IncomingReceiptProtocolEntity(str(time.time()), messages[0].getTo(),
+            str(int(time.time())),
+            items = [message.getId() for message in messages])
+
+        self.stack.receive(receipt)
+
+        # check
+        for message in messages:
+            state = self.getMessageState(message.getId())
+            self.assertEqual(state.name, State.get_sent_delivered().name)
+
+
+        receipt.type = "read"
+
+        self.stack.receive(receipt)
+
+        for message in messages:
+            state = self.getMessageState(message.getId())
+            self.assertEqual(state.name, State.get_sent_read().name)
+
 
     def getMessageState(self, messageGenId):
         from yowsup_ext.layers.store.models.messagestate import MessageState
