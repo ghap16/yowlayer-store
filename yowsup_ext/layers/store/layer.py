@@ -1,5 +1,5 @@
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
-from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
+from yowsup.layers.protocol_messages.protocolentities import MessageProtocolEntity, TextMessageProtocolEntity
 from yowsup.layers.protocol_contacts.protocolentities import GetSyncIqProtocolEntity
 from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
 from yowsup.common.tools import StorageTools
@@ -54,6 +54,7 @@ class YowStorageLayer(YowInterfaceLayer):
 
         #init Models that require init to setup initial vals
         State.init()
+        MediaType.init()
 
     def reset(self):
         self.db.drop_tables(Models)
@@ -137,6 +138,10 @@ class YowStorageLayer(YowInterfaceLayer):
         if messageProtocolEntity.getType() == TextMessageProtocolEntity.MESSAGE_TYPE_TEXT:
             return self.storeTextMessage(messageProtocolEntity, conversation)
 
+
+    def storeMediaMessage(self, mediaMessageProtocolEntity):
+        pass
+
     def storeTextMessage(self, textMessageProtocolEntity, conversation):
         message = Message(
             id_gen = textMessageProtocolEntity.getId(),
@@ -160,11 +165,9 @@ class YowStorageLayer(YowInterfaceLayer):
         :return:
         '''
 
-        if protocolEntity.__class__ == TextMessageProtocolEntity:
+        if isinstance(protocolEntity, MessageProtocolEntity):
             message = self.storeMessage(protocolEntity)
             MessageState.set_sent_queued(message)
-        elif protocolEntity.__class__ == "Media":
-            pass
         elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == "receipt":
