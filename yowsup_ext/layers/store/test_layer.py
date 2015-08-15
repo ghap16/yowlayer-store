@@ -5,6 +5,8 @@ from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEnti
 from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity, OutgoingReceiptProtocolEntity
 from yowsup_ext.layers import YowStorageLayer
 from yowsup.layers.protocol_contacts.protocolentities import ResultSyncIqProtocolEntity, GetSyncIqProtocolEntity
+from yowsup.layers.protocol_media.protocolentities import *
+import sys
 import time
 
 class YowStorageLayerTest(unittest.TestCase):
@@ -109,6 +111,25 @@ class YowStorageLayerTest(unittest.TestCase):
             .where(Message.id == message.id))
 
         return states[0]
+
+    def test_storeOutgoingLocationMessage(self):
+        from yowsup_ext.layers.store.models.message import Message
+        locData = {
+            "latitude": "LAT",
+            "longitude": "LONG",
+            "name": "name"
+        }
+        locationMessage = LocationMediaMessageProtocolEntity(
+            locData["latitude"],locData["longitude"],locData["name"],
+            "http://maps.google.com/", "raw", to="t@s.whatsapp.net", preview = "PREV"
+        )
+        self.stack.send(locationMessage)
+
+        message = Message.get(id_gen = locationMessage.getId())
+
+        self.assertEqual(message.content, locData["name"])
+        self.assertEqual(message.media.data, ";".join((locData["latitude"], locData["longitude"])))
+
 
     def test_storeOutgoingTextMessages(self):
         from yowsup_ext.layers.store.models.state import State

@@ -11,5 +11,9 @@ class Message(db.get_base_model()):
     conversation = peewee.ForeignKeyField(Conversation)
     created = peewee.DateTimeField(default=datetime.datetime.now())
     t_sent = peewee.DateTimeField(default=datetime.datetime.now())
-    content = peewee.TextField()
+    content = peewee.TextField(null=True)
     media = peewee.ForeignKeyField(Media, null=True)
+
+    def getMediaType(self):
+        if self.media is not None:
+            return self.media.type

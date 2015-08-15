@@ -2,6 +2,7 @@ from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.protocol_messages.protocolentities import MessageProtocolEntity, TextMessageProtocolEntity
 from yowsup.layers.protocol_contacts.protocolentities import GetSyncIqProtocolEntity
 from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
+from yowsup.layers.protocol_media.protocolentities import MediaMessageProtocolEntity
 from yowsup.common.tools import StorageTools
 from layer_interface import StorageLayerInterface
 import datetime
@@ -135,22 +136,55 @@ class YowStorageLayer(YowInterfaceLayer):
         else:
             conversation = self.getConversation(messageProtocolEntity.getFrom())
 
-        if messageProtocolEntity.getType() == TextMessageProtocolEntity.MESSAGE_TYPE_TEXT:
-            return self.storeTextMessage(messageProtocolEntity, conversation)
-
-
-    def storeMediaMessage(self, mediaMessageProtocolEntity):
-        pass
-
-    def storeTextMessage(self, textMessageProtocolEntity, conversation):
         message = Message(
-            id_gen = textMessageProtocolEntity.getId(),
+            id_gen = messageProtocolEntity.getId(),
             conversation = conversation,
-            content = textMessageProtocolEntity.getBody(),
-            t_sent = datetime.datetime.fromtimestamp(textMessageProtocolEntity.getTimestamp())
+            t_sent = datetime.datetime.fromtimestamp(messageProtocolEntity.getTimestamp())
         )
+
+        if messageProtocolEntity.getType() == MessageProtocolEntity.MESSAGE_TYPE_MEDIA:
+            media = self.getMedia(messageProtocolEntity, message)
+            media.save()
+            message.media = media
+        else:
+            message.content = messageProtocolEntity.getBody()
+
         message.save()
         return message
+
+    def getMedia(self, mediaMessageProtocolEntity, message):
+        media = Media(
+            type=MediaType.get_mediatype(mediaMessageProtocolEntity.getMediaType()),
+            preview=mediaMessageProtocolEntity.getPreview())
+        if mediaMessageProtocolEntity.getType() in (
+            MediaMessageProtocolEntity.MEDIA_TYPE_IMAGE,
+            MediaMessageProtocolEntity.MEDIA_TYPE_AUDIO,
+            MediaMessageProtocolEntity.MEDIA_TYPE_VIDEO
+        ):
+            self.storeDownloadableMedia(mediaMessageProtocolEntity, media, message)
+        elif mediaMessageProtocolEntity.getMediaType() == MediaMessageProtocolEntity.MEDIA_TYPE_LOCATION:
+            message.content = mediaMessageProtocolEntity.getLocationName()
+            self.setLocationMediaData(mediaMessageProtocolEntity, media)
+        elif mediaMessageProtocolEntity.getMediaType() == MediaMessageProtocolEntity.MEDIA_TYPE_VCARD:
+            message.content = mediaMessageProtocolEntity.getName()
+            self.setVCardMediaData(mediaMessageProtocolEntity, media)
+
+        return media
+
+    def setLocationMediaData(self, locationMediaMessageProtocolEntity, media):
+        media.remote_url = locationMediaMessageProtocolEntity.getLocationURL()
+        media.data = ";".join((locationMediaMessageProtocolEntity.getLatitude(), locationMediaMessageProtocolEntity.getLongitude()))
+        media.encoding = locationMediaMessageProtocolEntity.encoding
+
+    def setVCardMediaData(self, vcardMediaMessageProtocolEntity, media):
+        media.data = vcardMediaMessageProtocolEntity.getCardData()
+
+    def setDownloadableMediaData(self, downloadableMediaMessageProtocolEntity, media):
+        media.size = downloadableMediaMessageProtocolEntity.getMediaSize()
+        media.remote_url = downloadableMediaMessageProtocolEntity.getMediaUrl()
+        media.mimetype = downloadableMediaMessageProtocolEntity.getMimeType()
+        media.filehash = downloadableMediaMessageProtocolEntity.fileHash
+        media.filename = downloadableMediaMessageProtocolEntity.fileName
 
     def storeContactsSyncResult(self, resultSyncIqProtocolEntity, originalGetSyncProtocolEntity):
         for number, jid in resultSyncIqProtocolEntity.inNumbers.items():

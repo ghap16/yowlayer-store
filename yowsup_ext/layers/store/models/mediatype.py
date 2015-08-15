@@ -1,11 +1,12 @@
 from yowsup_ext.layers.store import db
+from yowsup.layers.protocol_media.protocolentities import MediaMessageProtocolEntity
 import peewee
 
-TYPE_IMAGE      = "image"
-TYPE_AUDIO      = "audio"
-TYPE_VIDEO      = "video"
-TYPE_CONTACT    = "contact"
-TYPE_LOCATION   = "location"
+TYPE_IMAGE      = MediaMessageProtocolEntity.MEDIA_TYPE_IMAGE
+TYPE_AUDIO      = MediaMessageProtocolEntity.MEDIA_TYPE_AUDIO
+TYPE_VIDEO      = MediaMessageProtocolEntity.MEDIA_TYPE_VIDEO
+TYPE_VCARD      = MediaMessageProtocolEntity.MEDIA_TYPE_VCARD
+TYPE_LOCATION   = MediaMessageProtocolEntity.MEDIA_TYPE_LOCATION
 
 class MediaType(db.get_base_model()):
     type = peewee.CharField()
@@ -18,7 +19,7 @@ class MediaType(db.get_base_model()):
         cls.get_or_create(type=TYPE_IMAGE)
         cls.get_or_create(type=TYPE_AUDIO)
         cls.get_or_create(type=TYPE_VIDEO)
-        cls.get_or_create(type=TYPE_CONTACT)
+        cls.get_or_create(type=TYPE_VCARD)
         cls.get_or_create(type=TYPE_LOCATION)
 
     @classmethod
@@ -34,8 +35,8 @@ class MediaType(db.get_base_model()):
         return cls.get_mediatype(TYPE_VIDEO)
 
     @classmethod
-    def get_contact(cls):
-        return cls.get_mediatype(TYPE_CONTACT)
+    def get_vcard(cls):
+        return cls.get_mediatype(TYPE_VCARD)
 
     @classmethod
     def get_location(cls):
