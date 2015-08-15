@@ -117,11 +117,13 @@ class YowStorageLayerTest(unittest.TestCase):
         locData = {
             "latitude": "LAT",
             "longitude": "LONG",
-            "name": "name"
+            "name": "name",
+            "url": "URL",
+            "encoding": "raw"
         }
         locationMessage = LocationMediaMessageProtocolEntity(
             locData["latitude"],locData["longitude"],locData["name"],
-            "http://maps.google.com/", "raw", to="t@s.whatsapp.net", preview = "PREV"
+            locData["url"], locData["encoding"], to="t@s.whatsapp.net", preview = "PREV"
         )
         self.stack.send(locationMessage)
 
@@ -129,6 +131,27 @@ class YowStorageLayerTest(unittest.TestCase):
 
         self.assertEqual(message.content, locData["name"])
         self.assertEqual(message.media.data, ";".join((locData["latitude"], locData["longitude"])))
+        self.assertEqual(message.media.preview, "PREV")
+        self.assertEqual(message.media.remote_url, locData["url"])
+        self.assertEqual(message.media.encoding, locData["encoding"])
+
+
+    # def test_storeOutgoingImageMessage(self):
+    #     from yowsup_ext.layers.store.models.message import Message
+
+    def test_storeOutgoingVCardMessage(self):
+        from yowsup_ext.layers.store.models.message import Message
+        vcardData = {
+            "name": "NAME",
+            "data": "VCARD_DATA"
+        }
+        vcardMessageEntity = VCardMediaMessageProtocolEntity(vcardData["name"], vcardData["data"], to="t@s.whatsapp.net")
+        self.stack.send(vcardMessageEntity)
+
+        message = Message.get(id_gen = vcardMessageEntity.getId())
+
+        self.assertEqual(message.content, vcardData["name"])
+        self.assertEqual(message.media.data, vcardData["data"])
 
 
     def test_storeOutgoingTextMessages(self):

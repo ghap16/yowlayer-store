@@ -4,7 +4,7 @@ from mediatype import MediaType
 
 class Media(db.get_base_model()):
     type = peewee.ForeignKeyField(MediaType)
-    preview = peewee.CharField()
+    preview = peewee.TextField(null=True)
     remote_url = peewee.CharField(null = True)
     local_path = peewee.CharField(null = True)
     data = peewee.TextField(null = True)
