@@ -64,6 +64,16 @@ class YowStorageLayer(YowInterfaceLayer):
     def getContacts(self):
         return Contact.select()
 
+    def addContact(self, jidOrNumber):
+        if '@' in jidOrNumber:
+            number = jidOrNumber.split('@')[0]
+            contact = Contact.get_or_create(jid = jidOrNumber, number = number)[0]
+        else:
+            jid = jidOrNumber + '@s.whatsapp.net'
+            contact = Contact.get_or_create(jid = jid, number = jidOrNumber)[0]
+
+        return contact
+
     def getContact(self, jidOrNumber):
         try:
             if '@' in jidOrNumber:
@@ -83,6 +93,16 @@ class YowStorageLayer(YowInterfaceLayer):
             .order_by(Message.id.desc())\
             .limit(limit)\
             .offset(offset)
+        return messages
+
+    def _getJid(self, jidOrNumber):
+        return jidOrNumber if '@' in jidOrNumber else jidOrNumber + "@s.whatsapp.net"
+
+    def getUnreadMessages(self, jidOrNumber):
+        jid = self._getJid(jidOrNumber)
+        conversation = self.getConversation(jid)
+        messages = Message.getByState(conversation, State.get_received())
+
         return messages
 
     def isGroupJid(self, jid):
