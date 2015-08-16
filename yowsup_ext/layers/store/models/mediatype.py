@@ -9,18 +9,18 @@ TYPE_VCARD      = MediaMessageProtocolEntity.MEDIA_TYPE_VCARD
 TYPE_LOCATION   = MediaMessageProtocolEntity.MEDIA_TYPE_LOCATION
 
 class MediaType(db.get_base_model()):
-    type = peewee.CharField()
+    name = peewee.CharField()
 
     def __unicode__(self):
-        return self.type
+        return self.name
 
     @classmethod
     def init(cls):
-        cls.get_or_create(type=TYPE_IMAGE)
-        cls.get_or_create(type=TYPE_AUDIO)
-        cls.get_or_create(type=TYPE_VIDEO)
-        cls.get_or_create(type=TYPE_VCARD)
-        cls.get_or_create(type=TYPE_LOCATION)
+        cls.get_or_create(name=TYPE_IMAGE)
+        cls.get_or_create(name=TYPE_AUDIO)
+        cls.get_or_create(name=TYPE_VIDEO)
+        cls.get_or_create(name=TYPE_VCARD)
+        cls.get_or_create(name=TYPE_LOCATION)
 
     @classmethod
     def get_image(cls):
@@ -44,4 +44,4 @@ class MediaType(db.get_base_model()):
 
     @classmethod
     def get_mediatype(cls, name):
-        return cls.get(cls.type==name)
+        return cls.get(cls.name==name)
