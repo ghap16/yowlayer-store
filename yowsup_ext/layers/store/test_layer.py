@@ -25,9 +25,13 @@ class YowStorageLayerTest(unittest.TestCase):
         self.stack.send(msg)
         return msg
 
-    def sendReceipt(self, message, read = False, participant = None):
+    def sendReceipt(self, message, read = False, participant = None, ack = True):
         receipt = OutgoingReceiptProtocolEntity(message.getId(), message.getTo(), read)
         self.stack.send(receipt)
+
+        if ack:
+            self.stack.receive(IncomingAckProtocolEntity(receipt.getId(), "receipt", receipt.to, str(int(time.time()))))
+
         return receipt
 
     def receiveMessage(self):
@@ -320,6 +324,7 @@ class YowStorageLayerTest(unittest.TestCase):
         from yowsup_ext.layers.store.models.state import State
 
         msg = self.receiveMessage()
+        self.sendReceipt(msg)
 
         message = Message.get(id_gen = msg.getId())
 
@@ -332,6 +337,7 @@ class YowStorageLayerTest(unittest.TestCase):
             .where(Message.id == message.id))
 
         self.assertEqual(states[0].name, State.get_received().name)
+        self.sendReceipt(msg, read=True)
 
     def test_contactsSync(self):
         from yowsup_ext.layers.store.models.contact import Contact
@@ -368,3 +374,18 @@ class YowStorageLayerTest(unittest.TestCase):
         contact = interface.getContact(jid)
         self.assertTrue(contact is not None)
         self.assertEqual(contact["number"], phone)
+
+    def test_getUnreadMessages(self):
+        message1 = self.receiveMessage()
+        message2 = self.receiveMessage()
+
+        iface = self.stack.getLayerInterface(YowStorageLayer)
+        unreadIds = [m["id"] for m in iface.getUnreadMessages(message1.getFrom())]
+
+
+        self.assertEqual(len(unreadIds), 2)
+        self.assertTrue(message1.getId() in unreadIds)
+        self.assertTrue(message2.getId() in unreadIds)
+
+        self.sendReceipt(message1, True)
+        self.sendReceipt(message2, True)

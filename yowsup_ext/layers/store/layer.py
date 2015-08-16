@@ -1,7 +1,7 @@
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.protocol_messages.protocolentities import MessageProtocolEntity, TextMessageProtocolEntity
 from yowsup.layers.protocol_contacts.protocolentities import GetSyncIqProtocolEntity
-from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity
+from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity, OutgoingReceiptProtocolEntity
 from yowsup.layers.protocol_media.protocolentities import MediaMessageProtocolEntity
 from yowsup.common.tools import StorageTools
 from layer_interface import StorageLayerInterface
@@ -141,6 +141,16 @@ class YowStorageLayer(YowInterfaceLayer):
             message = self.getMessageByGenId(incomingAckProtocolEntity.getId())
             MessageState.set_sent(message)
 
+    def onReceiptAck(self, incomingAckProtocolEntity, outgoingReceiptProtocolEntity):
+        try:
+            message = Message.get(id_gen = incomingAckProtocolEntity.getId())
+            if outgoingReceiptProtocolEntity.read:
+                MessageState.set_received_read(message)
+            else:
+                MessageState.set_received(message)
+        except peewee.DoesNotExist:
+            logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
+
     @ProtocolEntityCallback("receipt")
     def onReceipt(self, receiptProtocolEntity):
         '''
@@ -244,8 +254,7 @@ class YowStorageLayer(YowInterfaceLayer):
             MessageState.set_sent_queued(message)
         elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
-        elif protocolEntity.__class__ == "receipt":
-            #@@TODO intercept
-            pass
+        elif protocolEntity.__class__ == OutgoingReceiptProtocolEntity:
+            self._sendReceipt(protocolEntity, self.onReceiptAck)
 
         self.toLower(protocolEntity)
