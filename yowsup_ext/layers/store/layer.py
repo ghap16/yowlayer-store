@@ -101,7 +101,7 @@ class YowStorageLayer(YowInterfaceLayer):
     def getUnreadMessages(self, jidOrNumber):
         jid = self._getJid(jidOrNumber)
         conversation = self.getConversation(jid)
-        messages = Message.getByState(conversation, State.get_received())
+        messages = Message.getByState(conversation, (State.get_received(), State.get_received_remote()))
 
         return messages
 
@@ -129,27 +129,27 @@ class YowStorageLayer(YowInterfaceLayer):
         MessageState.set_received(message)
         self.toUpper(messageProtocolEntity)
 
+
     @ProtocolEntityCallback("ack")
-    def onAck(self, incomingAckProtocolEntity):
-        '''
-        For when a server acks our outgoing message
-        :param incomingAckProtocolEntity:
-        :return:
-        '''
-        if incomingAckProtocolEntity.getClass() == "message":
-            '''handle'''
+    def onAck(self, incomingAckProtocolEntity, OutgoingReceiptProtocolEntity = None):
+        from models import state
+
+        if incomingAckProtocolEntity.getClass() == "receipt":
+            try:
+
+                message = Message.get(id_gen = incomingAckProtocolEntity.getId())
+                messageState = message.getState()
+                if messageState.name == state.STATE_RECEIVED:
+                    MessageState.set_received_remote(message)
+                elif messageState.name == state.STATE_RECEIVED_REMOTE:
+                    MessageState.set_received_read(message)
+
+            except peewee.DoesNotExist:
+                logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
+        elif incomingAckProtocolEntity.getClass() == "message":
             message = self.getMessageByGenId(incomingAckProtocolEntity.getId())
             MessageState.set_sent(message)
 
-    def onReceiptAck(self, incomingAckProtocolEntity, outgoingReceiptProtocolEntity):
-        try:
-            message = Message.get(id_gen = incomingAckProtocolEntity.getId())
-            if outgoingReceiptProtocolEntity.read:
-                MessageState.set_received_read(message)
-            else:
-                MessageState.set_received(message)
-        except peewee.DoesNotExist:
-            logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
 
     @ProtocolEntityCallback("receipt")
     def onReceipt(self, receiptProtocolEntity):
@@ -255,6 +255,6 @@ class YowStorageLayer(YowInterfaceLayer):
         elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == OutgoingReceiptProtocolEntity:
-            self._sendReceipt(protocolEntity, self.onReceiptAck)
+            self._sendReceipt(protocolEntity, self.onAck)
 
         self.toLower(protocolEntity)

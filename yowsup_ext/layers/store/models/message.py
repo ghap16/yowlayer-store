@@ -25,13 +25,13 @@ class Message(db.get_base_model()):
         return MessageState.get_state(self)
 
     @classmethod
-    def getByState(cls, conversation, state):
+    def getByState(cls, conversation, states):
         from messagestate import MessageState
         query = (cls
                 .select()
                 .join(MessageState)
                 .join(State)
-                .where(State.id == state.id, Message.conversation == conversation)
+                .where(State.id << [state.id for state in states], Message.conversation == conversation)
                 )
         return query
 

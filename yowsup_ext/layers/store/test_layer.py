@@ -336,7 +336,7 @@ class YowStorageLayerTest(unittest.TestCase):
             .join(Message)
             .where(Message.id == message.id))
 
-        self.assertEqual(states[0].name, State.get_received().name)
+        self.assertEqual(states[0].name, State.get_received_remote().name)
         self.sendReceipt(msg, read=True)
 
     def test_contactsSync(self):
@@ -378,6 +378,9 @@ class YowStorageLayerTest(unittest.TestCase):
     def test_getUnreadMessages(self):
         message1 = self.receiveMessage()
         message2 = self.receiveMessage()
+
+        self.sendReceipt(message1)
+        self.sendReceipt(message2)
 
         iface = self.stack.getLayerInterface(YowStorageLayer)
         unreadIds = [m["id"] for m in iface.getUnreadMessages(message1.getFrom())]
