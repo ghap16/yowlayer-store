@@ -353,3 +353,18 @@ class YowStorageLayerTest(unittest.TestCase):
 
         for number, jid  in inNumbers.items():
             Contact.get(jid = jid, number = number)
+
+        interface = self.stack.getLayerInterface(YowStorageLayer)
+
+
+        # get by number
+        contact = interface.getContact(inNumbers.keys()[0])
+        self.assertTrue(contact is not None)
+        self.assertEqual(contact["jid"], inNumbers[inNumbers.keys()[0]])
+
+        # get by jid
+        phone = inNumbers.keys()[1]
+        jid = inNumbers[inNumbers.keys()[1]]
+        contact = interface.getContact(jid)
+        self.assertTrue(contact is not None)
+        self.assertEqual(contact["number"], phone)

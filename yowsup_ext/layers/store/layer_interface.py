@@ -1,8 +1,16 @@
 from yowsup.layers import YowLayerInterface
 
 class StorageLayerInterface(YowLayerInterface):
-    def getContact(self, jid):
-        pass
+    def getContact(self, jidOrNumber):
+        contact = self._layer.getContact(jidOrNumber)
+        if contact:
+            return contact.to_dict()
+
+    def getContacts(self):
+        return [contact.to_dict() for contact in self._layer.getContact(jidOrNumber)]
+
+    def isContact(self, jidOrNumber):
+        return self.getContact() is not None
 
     def getMessages(self, jid, offset = 0, limit = 30):
         return self._layer.getMessages(jid, offset, limit)

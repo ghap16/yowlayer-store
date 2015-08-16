@@ -61,6 +61,21 @@ class YowStorageLayer(YowInterfaceLayer):
         self.db.drop_tables(Models)
         self.setup_models()
 
+    def getContacts(self):
+        return Contact.select()
+
+    def getContact(self, jidOrNumber):
+        try:
+            if '@' in jidOrNumber:
+                return Contact.get(Contact.jid == jidOrNumber)
+
+            return Contact.get(Contact.number == jidOrNumber)
+        except DoesNotExist:
+            return None
+
+    def isContact(self, jidOrNumber):
+        return self.getContact(jidOrNumber) is not None
+
     def getMessages(self, jid, offset, limit):
         conversation = self.getConversation(jid)
         messages = Message.select()\

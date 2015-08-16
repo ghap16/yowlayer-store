@@ -9,3 +9,14 @@ class Contact(db.get_base_model()):
     push_name = peewee.CharField(null=True)
     name = peewee.CharField(null=True)
     picture = peewee.BlobField(null=True)
+
+    def to_dict(self):
+        return {
+            "number": self.number,
+            "jid": self.jid,
+            "last_seen_on": self.last_seen_on,
+            "status": self.status,
+            "push_name": self.push_name,
+            "name": self.name,
+            "picture": self.picture
+        }
