@@ -163,9 +163,9 @@ class YowStorageLayer(YowInterfaceLayer):
         ):
             self.setDownloadableMediaData(mediaMessageProtocolEntity, media)
 
-            if mediaMessageProtocolEntity.getMediaType() == MediaMessageProtocolEntity.MEDIA_TYPE_IMAGE:
+            media.encoding = mediaMessageProtocolEntity.encoding
+            if mediaMessageProtocolEntity.getMediaType() != MediaMessageProtocolEntity.MEDIA_TYPE_AUDIO:
                 message.content = mediaMessageProtocolEntity.getCaption()
-                media.encoding = mediaMessageProtocolEntity.encoding
 
         elif mediaMessageProtocolEntity.getMediaType() == MediaMessageProtocolEntity.MEDIA_TYPE_LOCATION:
             message.content = mediaMessageProtocolEntity.getLocationName()

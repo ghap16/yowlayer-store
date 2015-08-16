@@ -191,6 +191,97 @@ class YowStorageLayerTest(unittest.TestCase):
         self.assertEqual(message.media.filename, mediaData["file"])
         self.assertEqual(message.media.remote_url, mediaData["url"])
 
+
+    def test_storeOutgoingAudioMessage(self):
+            from yowsup_ext.layers.store.models.message import Message
+            mediaData = {
+                "mimetype": "image/jpeg",
+                "filehash": "fhash",
+                "url": "http:/google.com",
+                "ip": "ip",
+                "size": 1234,
+                "file": "filename",
+                "encoding": "raw",
+                "abitrate": "bitrate",
+                "acodec": "code"
+            }
+
+            messageEntity = AudioDownloadableMediaMessageProtocolEntity(
+                mediaData["mimetype"],
+                mediaData["filehash"],
+                mediaData["url"],
+                mediaData["ip"],
+                mediaData["size"],
+                mediaData["file"],
+                None,
+                None,
+                None,
+                None,
+                mediaData["encoding"],
+                None,
+                None,
+                to = "t@s.whatsapp.net"
+            )
+
+            self.stack.send(messageEntity)
+
+            message = Message.get(id_gen = messageEntity.getId())
+
+            self.assertEqual(message.media.encoding, mediaData["encoding"])
+            self.assertEqual(message.media.filehash, mediaData["filehash"])
+            self.assertEqual(message.media.mimetype, mediaData["mimetype"])
+            self.assertEqual(message.media.filename, mediaData["file"])
+            self.assertEqual(message.media.remote_url, mediaData["url"])
+
+    def test_storeOutgoingVideoMessage(self):
+            from yowsup_ext.layers.store.models.message import Message
+            mediaData = {
+                "mimetype": "image/jpeg",
+                "filehash": "fhash",
+                "url": "http:/google.com",
+                "ip": "ip",
+                "size": 1234,
+                "file": "filename",
+                "encoding": "raw",
+                "abitrate": "bitrate",
+                "acodec": "code",
+                "caption": "CAPT"
+            }
+
+            messageEntity = VideoDownloadableMediaMessageProtocolEntity(
+                mediaData["mimetype"],
+                mediaData["filehash"],
+                mediaData["url"],
+                mediaData["ip"],
+                mediaData["size"],
+                mediaData["file"],
+                None,
+                None,
+                None,
+                None,
+                None,
+                mediaData["encoding"],
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                mediaData["caption"],
+                to = "t@s.whatsapp.net"
+            )
+
+            self.stack.send(messageEntity)
+
+            message = Message.get(id_gen = messageEntity.getId())
+
+            self.assertEqual(message.content, mediaData["caption"])
+            self.assertEqual(message.media.encoding, mediaData["encoding"])
+            self.assertEqual(message.media.filehash, mediaData["filehash"])
+            self.assertEqual(message.media.mimetype, mediaData["mimetype"])
+            self.assertEqual(message.media.filename, mediaData["file"])
+            self.assertEqual(message.media.remote_url, mediaData["url"])
+
     def test_storeOutgoingTextMessages(self):
         from yowsup_ext.layers.store.models.state import State
         from yowsup_ext.layers.store.models.messagestate import MessageState
