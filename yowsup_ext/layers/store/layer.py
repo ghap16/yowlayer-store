@@ -98,10 +98,17 @@ class YowStorageLayer(YowInterfaceLayer):
     def _getJid(self, jidOrNumber):
         return jidOrNumber if '@' in jidOrNumber else jidOrNumber + "@s.whatsapp.net"
 
-    def getUnreadMessages(self, jidOrNumber):
+    def getUnreadReceivedMessages(self, jidOrNumber):
         jid = self._getJid(jidOrNumber)
         conversation = self.getConversation(jid)
-        messages = Message.getByState(conversation, (State.get_received(), State.get_received_remote()))
+        messages = Message.getByState(conversation, [State.get_received_remote()])
+
+        return messages
+
+    def getUnackedReceivedMessages(self, jidOrNumber):
+        jid = self._getJid(jidOrNumber)
+        conversation = self.getConversation(jid)
+        messages = Message.getByState(conversation, [State.get_received()])
 
         return messages
 
@@ -141,8 +148,8 @@ class YowStorageLayer(YowInterfaceLayer):
                 messageState = message.getState()
                 if messageState.name == state.STATE_RECEIVED:
                     MessageState.set_received_remote(message)
-                elif messageState.name == state.STATE_RECEIVED_REMOTE:
-                    MessageState.set_received_read(message)
+                elif messageState.name == state.STATE_RECEIVED_READ:
+                    MessageState.set_received_read_remote(message)
 
             except peewee.DoesNotExist:
                 logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
@@ -255,6 +262,9 @@ class YowStorageLayer(YowInterfaceLayer):
         elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == OutgoingReceiptProtocolEntity:
+            if protocolEntity.read:
+                message = Message.get(id_gen = protocolEntity.getId())
+                MessageState.set_received_read(message)
             self._sendReceipt(protocolEntity, self.onAck)
 
         self.toLower(protocolEntity)

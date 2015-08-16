@@ -383,7 +383,7 @@ class YowStorageLayerTest(unittest.TestCase):
         self.sendReceipt(message2)
 
         iface = self.stack.getLayerInterface(YowStorageLayer)
-        unreadIds = [m["id"] for m in iface.getUnreadMessages(message1.getFrom())]
+        unreadIds = [m["id"] for m in iface.getUnreadReceivedMessages(message1.getFrom())]
 
 
         self.assertEqual(len(unreadIds), 2)

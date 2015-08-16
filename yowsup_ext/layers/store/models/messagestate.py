@@ -30,6 +30,10 @@ class MessageState(db.get_base_model()):
         cls.update_received_state(message, State.get_received())
 
     @classmethod
+    def set_received_read_remote(cls, message):
+        cls.update_received_state(message, State.get_received_read_remote())
+
+    @classmethod
     def set_received_read(cls, message):
         cls.update_received_state(message, State.get_received_read())
 
