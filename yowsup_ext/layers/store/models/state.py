@@ -1,9 +1,9 @@
 from yowsup_ext.layers.store import db
 import peewee
 
-STATE_RECEIVED              = "received"
-STATE_RECEIVED_READ         = "received_read"           #set when try sending read receipt
-STATE_RECEIVED_READ_REMOTE  = "received_read_remote"    #set upon receving read receipt ack
+STATE_RECEIVED              = "received"                #received
+STATE_RECEIVED_REMOTE       = "received_remote"         #set when delivered receipt was acked
+STATE_RECEIVED_READ         = "received_read"           #set when read receipt was acked
 STATE_SENT_QUEUED           = "sent_queued"
 STATE_SENT                  = "sent"
 STATE_SENT_DELIVERED        = "sent_delivered"
@@ -15,8 +15,8 @@ class State(db.get_base_model()):
     @classmethod
     def init(cls):
         cls.get_or_create(name = STATE_RECEIVED)
+        cls.get_or_create(name = STATE_RECEIVED_REMOTE)
         cls.get_or_create(name = STATE_RECEIVED_READ)
-        cls.get_or_create(name = STATE_RECEIVED_READ_REMOTE)
         cls.get_or_create(name = STATE_SENT_QUEUED)
         cls.get_or_create(name = STATE_SENT)
         cls.get_or_create(name = STATE_SENT_DELIVERED)
@@ -32,6 +32,10 @@ class State(db.get_base_model()):
     @classmethod
     def get_received(cls):
         return cls.get(State.name == STATE_RECEIVED)
+
+    @classmethod
+    def get_received_remote(cls):
+        return cls.get(State.name == STATE_RECEIVED_REMOTE)
 
     @classmethod
     def get_sent_queued(cls):

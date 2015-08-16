@@ -10,9 +10,32 @@ class MessageState(db.get_base_model()):
     contact = peewee.ForeignKeyField(Contact, null=True)
 
     @classmethod
+    def get_state(cls, message):
+        try:
+            return MessageState.get(message = message).state
+        except peewee.DoesNotExist:
+            return None
+
+    @classmethod
+    def update_received_state(cls, message, state):
+        try:
+            mstate = MessageState.get(message=message)
+        except peewee.DoesNotExist:
+            mstate = MessageState(message=message)
+        mstate.state = state
+        mstate.save()
+
+    @classmethod
     def set_received(cls, message):
-        messageState = MessageState(message = message, state = State.get_received())
-        messageState.save()
+        cls.update_received_state(message, State.get_received())
+
+    @classmethod
+    def set_received_read(cls, message):
+        cls.update_received_state(message, State.get_received_read())
+
+    @classmethod
+    def set_received_remote(cls, message):
+        cls.update_received_state(message, State.get_received_remote())
 
     @classmethod
     def set_sent(cls, message):
