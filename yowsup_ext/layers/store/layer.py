@@ -117,6 +117,15 @@ class YowStorageLayer(YowInterfaceLayer):
 
         return Message.getByState([State.get_received()], conversation)
 
+    def getUnackedSentMessages(self, jidOrNumber = None):
+        if jidOrNumber:
+            jid = self._getJid(jidOrNumber)
+            conversation = self.getConversation(jid)
+        else:
+            conversation = None
+
+        return Message.getByState([State.get_sent_queued()], conversation)
+
     def isGroupJid(self, jid):
         return "-" in jid
 
@@ -150,6 +159,50 @@ class YowStorageLayer(YowInterfaceLayer):
             MessageState.set_sent(message)
 
         self.toUpper(incomingAckProtocolEntity)
+
+    @ProtocolEntityCallback("success")
+    def onAuthed(self, successProtocolEntity):
+        #send pending receipts
+        messages = self.getUnackedReceivedMessages()
+        if messages.count():
+            self.sendReceipts(messages)
+
+        #send offline messages
+        # messages = self.getUnackedSentMessages()
+        # for message in messages:
+        #     if message.media:
+        #         #handle Media
+        #         pass
+        #     else:
+        #         '''
+        #         (self, body, _id = None,  _from = None, to = None, notify = None,
+        # timestamp = None, participant = None, offline = None, retry = None)
+        #         '''
+        #         jid = message.group.jid if message.group is not None else message.contact.jid
+        #         textMessagePE = TextMessageProtocolEntity(message.content, message.id_gen, to = jid, timestamp)
+
+
+        self.toUpper(successProtocolEntity)
+
+    def sendReceipts(self, messageList, read = False):
+        receipts = {}
+        for m in messageList:
+            conversation = m.conversation
+            if conversation.contact is not None:
+                jid = conversation.contact.jid
+            elif conversation.group is not None:
+                jid = conversation.group.jid
+            else:
+                continue
+
+            if jid not in receipts:
+                receipts[jid] = []
+            receipts[jid].append(m.id_gen)
+
+        for jid, messageIds in receipts.items():
+            receipt = OutgoingReceiptProtocolEntity(messageIds, jid, read=read)
+
+            self.sendReceipt(receipt)
 
     def sendReceipt(self, outgoingReceiptProtocolEntity):
         for messageId in outgoingReceiptProtocolEntity.getMessageIds():
