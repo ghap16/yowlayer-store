@@ -10,7 +10,7 @@ class Contact(db.get_base_model()):
     name = peewee.CharField(null=True)
     picture = peewee.BlobField(null=True)
 
-    def to_dict(self):
+    def toDict(self):
         return {
             "number": self.number,
             "jid": self.jid,

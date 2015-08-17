@@ -5,9 +5,9 @@ from contact import Contact
 from group import Group
 from broadcast import Broadcast
 
-TYPE_CONTACT    = 0
-TYPE_GROUP      = 1
-TYPE_BROADCAST  = 2
+TYPE_CONTACT    = "contact"
+TYPE_GROUP      = "group"
+TYPE_BROADCAST  = "broadcast"
 
 class Conversation(db.get_base_model()):
     contact = peewee.ForeignKeyField(Contact, null=True)
@@ -27,6 +27,9 @@ class Conversation(db.get_base_model()):
 
     def toDict(self):
         return {
+            "contact": self.contact.toDict() if self.contact else None,
+            "group": self.group.toDict() if self.group else None,
+            "broadcast": self.broadcast.toDict() if self.broadcast else None,
             "type": self.getType(),
             "created": self.created
         }

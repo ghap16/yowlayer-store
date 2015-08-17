@@ -4,21 +4,21 @@ class StorageLayerInterface(YowLayerInterface):
     def getContact(self, jidOrNumber):
         contact = self._layer.getContact(jidOrNumber)
         if contact:
-            return contact.to_dict()
+            return contact.toDict()
 
     def getContacts(self):
-        return [contact.to_dict() for contact in self._layer.getContact(jidOrNumber)]
+        return [contact.toDict() for contact in self._layer.getContacts()]
 
     def isContact(self, jidOrNumber):
-        return self.getContact() is not None
+        return self.getContact(jidOrNumber) is not None
 
     def addContact(self, jidOrNumber):
-        return self._layer.addContact(jidOrNumber).to_dict()
+        return self._layer.addContact(jidOrNumber).toDict()
 
     def getUnreadReceivedMessages(self, jidOrNumber):
         return [message.toDict() for message in self._layer.getUnreadReceivedMessages(jidOrNumber)]
 
-    def getUnackedReceivedMessages(self, jidOrNumber):
+    def getUnackedReceivedMessages(self, jidOrNumber = None):
         return [message.toDict() for message in self._layer.getUnackedReceivedMessages(jidOrNumber)]
 
     def getMessages(self, jid, offset = 0, limit = 30):

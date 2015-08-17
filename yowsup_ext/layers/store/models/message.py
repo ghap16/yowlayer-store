@@ -7,7 +7,6 @@ from conversation import Conversation
 from media import Media
 from state import State
 
-
 class Message(db.get_base_model()):
     id_gen = peewee.CharField(null=False, unique=True)
     conversation = peewee.ForeignKeyField(Conversation)
@@ -25,14 +24,17 @@ class Message(db.get_base_model()):
         return MessageState.get_state(self)
 
     @classmethod
-    def getByState(cls, conversation, states):
+    def getByState(cls, states, conversation = None):
         from messagestate import MessageState
-        query = (cls
-                .select()
+
+        query = (cls.select()
                 .join(MessageState)
-                .join(State)
-                .where(State.id << [state.id for state in states], Message.conversation == conversation)
-                )
+                .join(State))
+        if conversation:
+            query = query.where(State.id << [state.id for state in states], Message.conversation == conversation)
+        else:
+            query = query.where(State.id << [state.id for state in states])
+
         return query
 
     def toDict(self):
