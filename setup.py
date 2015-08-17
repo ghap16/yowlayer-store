@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from setuptools import setup, find_packages
-from yowsup_ext.layers import store
 
 deps = ['yowsup2', 'peewee']
 
 setup(
     name='yowlayer-store',
-    version=store.__version__,
+    version="0.1",
     url='http://github.com/tgalal/yowlayer-store/',
     license='GPL-3+',
     author='Tarek Galal',
