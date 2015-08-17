@@ -25,12 +25,9 @@ class YowStorageLayerTest(unittest.TestCase):
         self.stack.send(msg)
         return msg
 
-    def sendReceipt(self, message, read = False, participant = None, ack = True):
+    def sendReceipt(self, message, read = False, participant = None):
         receipt = OutgoingReceiptProtocolEntity(message.getId(), message.getTo(), read)
         self.stack.send(receipt)
-
-        if ack:
-            self.stack.receive(IncomingAckProtocolEntity(receipt.getId(), "receipt", receipt.to, str(int(time.time()))))
 
         return receipt
 

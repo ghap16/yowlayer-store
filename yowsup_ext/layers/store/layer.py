@@ -140,22 +140,20 @@ class YowStorageLayer(YowInterfaceLayer):
     @ProtocolEntityCallback("ack")
     def onAck(self, incomingAckProtocolEntity, OutgoingReceiptProtocolEntity = None):
         from models import state
-
-        if incomingAckProtocolEntity.getClass() == "receipt":
-            try:
-
-                message = Message.get(id_gen = incomingAckProtocolEntity.getId())
-                messageState = message.getState()
-                if messageState.name == state.STATE_RECEIVED:
-                    MessageState.set_received_remote(message)
-                elif messageState.name == state.STATE_RECEIVED_READ:
-                    MessageState.set_received_read_remote(message)
-
-            except peewee.DoesNotExist:
-                logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
-        elif incomingAckProtocolEntity.getClass() == "message":
+        if incomingAckProtocolEntity.getClass() == "message":
             message = self.getMessageByGenId(incomingAckProtocolEntity.getId())
             MessageState.set_sent(message)
+
+    def sendReceipt(self, outgoingReceiptProtocolEntity):
+        try:
+            message = Message.get(id_gen = outgoingReceiptProtocolEntity.getId())
+            if outgoingReceiptProtocolEntity.read:
+                MessageState.set_received_read_remote(message)
+            else:
+                MessageState.set_received_remote(message)
+
+        except peewee.DoesNotExist:
+            logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
 
 
     @ProtocolEntityCallback("receipt")
@@ -265,6 +263,6 @@ class YowStorageLayer(YowInterfaceLayer):
             if protocolEntity.read:
                 message = Message.get(id_gen = protocolEntity.getId())
                 MessageState.set_received_read(message)
-            self._sendReceipt(protocolEntity, self.onAck)
+            self.sendReceipt(protocolEntity)
 
         self.toLower(protocolEntity)
