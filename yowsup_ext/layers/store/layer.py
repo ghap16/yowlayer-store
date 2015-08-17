@@ -152,15 +152,16 @@ class YowStorageLayer(YowInterfaceLayer):
         self.toUpper(incomingAckProtocolEntity)
 
     def sendReceipt(self, outgoingReceiptProtocolEntity):
-        try:
-            message = Message.get(id_gen = outgoingReceiptProtocolEntity.getId())
-            if outgoingReceiptProtocolEntity.read:
-                MessageState.set_received_read_remote(message)
-            else:
-                MessageState.set_received_remote(message)
+        for messageId in outgoingReceiptProtocolEntity.getMessageIds():
+            try:
+                message = Message.get(id_gen = messageId)
+                if outgoingReceiptProtocolEntity.read:
+                    MessageState.set_received_read_remote(message)
+                else:
+                    MessageState.set_received_remote(message)
 
-        except peewee.DoesNotExist:
-            logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
+            except peewee.DoesNotExist:
+                logger.warning("Sending receipt for non existent message in storage. Id: %s" % messageId)
 
         self.toLower(outgoingReceiptProtocolEntity)
 
@@ -274,8 +275,12 @@ class YowStorageLayer(YowInterfaceLayer):
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == OutgoingReceiptProtocolEntity:
             if protocolEntity.read:
-                message = Message.get(id_gen = protocolEntity.getId())
-                MessageState.set_received_read(message)
+                for messageId in protocolEntity.getMessageIds():
+                    try:
+                        message = Message.get(id_gen = messageId)
+                        MessageState.set_received_read(message)
+                    except peewee.DoesNotExist:
+                        continue
             self.sendReceipt(protocolEntity)
         # elif protocolEntity.__class__ == ListOutgoingReceiptProtocolEntity:
         #     if protocolEntity.read:
