@@ -15,18 +15,21 @@ Models = State = Message = MessageState = Conversation = Contact = \
     Group= GroupContact = MediaType = Media = Broadcast = \
     BroadcastContact = Status = None
 
-
 logger = logging.getLogger(__name__)
-DB_NAME = StorageTools.constructPath("yow.db")
 
 class YowStorageLayer(YowInterfaceLayer):
+    PROP_DB_PATH = "org.openwhatsapp.yowsup.prop.store.db"
     def __init__(self):
         super(YowStorageLayer, self).__init__()
         self.interface = StorageLayerInterface(self)
-        self.db = peewee.SqliteDatabase(DB_NAME, threadlocals=True)
+
+    def setStack(self, stack):
+        super(YowStorageLayer, self).setStack(stack)
+        self.db = peewee.SqliteDatabase(self.getProp(self.__class__.PROP_DB_PATH, StorageTools.constructPath("yow.db")), threadlocals=True)
         db.set_db(self.db)
         self.db.connect()
         self.setup_models()
+
 
     def setup_models(self):
         global             Models
@@ -80,7 +83,7 @@ class YowStorageLayer(YowInterfaceLayer):
                 return Contact.get(Contact.jid == jidOrNumber)
 
             return Contact.get(Contact.number == jidOrNumber)
-        except DoesNotExist:
+        except peewee.DoesNotExist:
             return None
 
     def isContact(self, jidOrNumber):
@@ -101,16 +104,18 @@ class YowStorageLayer(YowInterfaceLayer):
     def getUnreadReceivedMessages(self, jidOrNumber):
         jid = self._getJid(jidOrNumber)
         conversation = self.getConversation(jid)
-        messages = Message.getByState(conversation, [State.get_received_remote()])
+        messages = Message.getByState([State.get_received_remote()], conversation)
 
         return messages
 
-    def getUnackedReceivedMessages(self, jidOrNumber):
-        jid = self._getJid(jidOrNumber)
-        conversation = self.getConversation(jid)
-        messages = Message.getByState(conversation, [State.get_received()])
+    def getUnackedReceivedMessages(self, jidOrNumber = None):
+        if jidOrNumber:
+            jid = self._getJid(jidOrNumber)
+            conversation = self.getConversation(jid)
+        else:
+            conversation = None
 
-        return messages
+        return Message.getByState([State.get_received()], conversation)
 
     def isGroupJid(self, jid):
         return "-" in jid
@@ -144,6 +149,8 @@ class YowStorageLayer(YowInterfaceLayer):
             message = self.getMessageByGenId(incomingAckProtocolEntity.getId())
             MessageState.set_sent(message)
 
+        self.toUpper(incomingAckProtocolEntity)
+
     def sendReceipt(self, outgoingReceiptProtocolEntity):
         try:
             message = Message.get(id_gen = outgoingReceiptProtocolEntity.getId())
@@ -154,6 +161,8 @@ class YowStorageLayer(YowInterfaceLayer):
 
         except peewee.DoesNotExist:
             logger.warning("Sending receipt for non existent message in storage. Id: " % incomingAckProtocolEntity.getId())
+
+        self.toLower(outgoingReceiptProtocolEntity)
 
 
     @ProtocolEntityCallback("receipt")
@@ -168,17 +177,24 @@ class YowStorageLayer(YowInterfaceLayer):
 
         for id_ in ids:
             message = self.getMessageByGenId(id_)
-            if not receiptProtocolEntity.getType():
-                MessageState.set_sent_delivered(message)
-            elif receiptProtocolEntity.getType() == "read":
-                contact = None
-                if receiptProtocolEntity.getParticipant():
-                    contact = Contact.get_or_create(jid = receiptProtocolEntity.getParticipant())
-                MessageState.set_sent_read(message, contact)
+            if message:
+                if not receiptProtocolEntity.getType():
+                    MessageState.set_sent_delivered(message)
+                elif receiptProtocolEntity.getType() == "read":
+                    contact = None
+                    if receiptProtocolEntity.getParticipant():
+                        contact = Contact.get_or_create(jid = receiptProtocolEntity.getParticipant())
+                    MessageState.set_sent_read(message, contact)
+
+        self.toUpper(receiptProtocolEntity)
 
 
     def getMessageByGenId(self, genId):
-        return Message.get(Message.id_gen == genId)
+        try:
+            return Message.get(Message.id_gen == genId)
+        except peewee.DoesNotExist:
+            logger.warning("Message with id %s does not exist" % genId)
+            return None
 
     def storeMessage(self, messageProtocolEntity):
         if messageProtocolEntity.isOutgoing():
@@ -254,15 +270,21 @@ class YowStorageLayer(YowInterfaceLayer):
         :return:
         '''
 
-        if isinstance(protocolEntity, MessageProtocolEntity):
-            message = self.storeMessage(protocolEntity)
-            MessageState.set_sent_queued(message)
-        elif protocolEntity.__class__ == GetSyncIqProtocolEntity:
+        if protocolEntity.__class__ == GetSyncIqProtocolEntity:
             self._sendIq(protocolEntity, self.storeContactsSyncResult)
         elif protocolEntity.__class__ == OutgoingReceiptProtocolEntity:
             if protocolEntity.read:
                 message = Message.get(id_gen = protocolEntity.getId())
                 MessageState.set_received_read(message)
             self.sendReceipt(protocolEntity)
-
-        self.toLower(protocolEntity)
+        # elif protocolEntity.__class__ == ListOutgoingReceiptProtocolEntity:
+        #     if protocolEntity.read:
+        #         for mId in protocolEntity.getMessageIds():
+        #             message = Message.get(id_gen = mId)
+        #             MessageState.set_received_read(message)
+        #     self.sendReceipt(protocolEntity)
+        else:
+            if isinstance(protocolEntity, MessageProtocolEntity):
+                message = self.storeMessage(protocolEntity)
+                MessageState.set_sent_queued(message)
+            self.toLower(protocolEntity)
