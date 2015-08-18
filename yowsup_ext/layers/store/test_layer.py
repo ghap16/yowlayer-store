@@ -132,7 +132,7 @@ class YowStorageLayerTest(unittest.TestCase):
 
         self.assertEqual(message.content, locData["name"])
         self.assertEqual(message.media.data, ";".join((locData["latitude"], locData["longitude"])))
-        self.assertEqual(message.media.preview, "PREV")
+        self.assertEqual(str(message.media.preview), "PREV")
         self.assertEqual(message.media.remote_url, locData["url"])
         self.assertEqual(message.media.encoding, locData["encoding"])
 
