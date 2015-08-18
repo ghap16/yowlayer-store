@@ -270,7 +270,7 @@ class YowStorageLayer(YowInterfaceLayer):
             message.content = messageProtocolEntity.getBody()
 
         if type(message.content) is bytearray:
-            message.content = message.content.decode()
+            message.content = message.content.decode('latin-1')
 
         message.save()
         return message
