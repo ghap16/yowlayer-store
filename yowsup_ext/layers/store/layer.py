@@ -269,6 +269,9 @@ class YowStorageLayer(YowInterfaceLayer):
         else:
             message.content = messageProtocolEntity.getBody()
 
+        if type(message.content) is bytearray:
+            message.content = message.content.decode()
+
         message.save()
         return message
 
