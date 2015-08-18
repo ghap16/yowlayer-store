@@ -17,7 +17,7 @@ setup(
     packages= find_packages(),
     include_package_data=True,
     platforms='any',
-    namespace_packages = ['yowsup_ext'],
+    namespace_packages = ['yowsup_ext', 'yowsup_ext.layers'],
     #test_suite='',
     classifiers = [
         'Programming Language :: Python',

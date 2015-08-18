@@ -3,7 +3,7 @@ from yowsup.stacks.yowstack import YowStack
 from yowsup.layers.protocol_messages.protocolentities import TextMessageProtocolEntity
 from yowsup.layers.protocol_acks.protocolentities import IncomingAckProtocolEntity
 from yowsup.layers.protocol_receipts.protocolentities import IncomingReceiptProtocolEntity, OutgoingReceiptProtocolEntity
-from yowsup_ext.layers import YowStorageLayer
+from yowsup_ext.layers.store.layer import YowStorageLayer
 from yowsup.layers.protocol_contacts.protocolentities import ResultSyncIqProtocolEntity, GetSyncIqProtocolEntity
 from yowsup.layers.protocol_media.protocolentities import *
 import sys
