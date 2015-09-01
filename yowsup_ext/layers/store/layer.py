@@ -261,7 +261,10 @@ class YowStorageLayer(YowInterfaceLayer):
             while True:
                 Message.get(id_gen = messageGenId)
                 messageIdDis = messageGenId.split('-')
-                messageIdCount = int(messageIdDis[1]) + 1
+                if len(messageGenIdDis) == 2:
+                    messageIdCount = int(messageIdDis[1]) + 1
+                else:
+                    messageIdCount = 1
                 messageGenId = "%s-%s" % (messageIdDis[0], messageIdCount)
         except peewee.DoesNotExist:
             pass
