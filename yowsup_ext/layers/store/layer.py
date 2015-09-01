@@ -256,20 +256,21 @@ class YowStorageLayer(YowInterfaceLayer):
         else:
             conversation = self.getConversation(messageProtocolEntity.getFrom())
 
-        messageGenId = messageProtocolEntity.getId()
-        try:
-            while True:
-                Message.get(id_gen = messageGenId)
-                messageIdDis = messageGenId.split('-')
-                if len(messageGenIdDis) == 2:
-                    messageIdCount = int(messageIdDis[1]) + 1
-                else:
-                    messageIdCount = 1
-                messageGenId = "%s-%s" % (messageIdDis[0], messageIdCount)
-        except peewee.DoesNotExist:
-            pass
+        if messageProtocolEntity.isOutgoing():
+            messageGenId = messageProtocolEntity.getId()
+            try:
+                while True:
+                    Message.get(id_gen = messageGenId)
+                    messageIdDis = messageGenId.split('-')
+                    if len(messageGenIdDis) == 2:
+                        messageIdCount = int(messageIdDis[1]) + 1
+                    else:
+                        messageIdCount = 1
+                    messageGenId = "%s-%s" % (messageIdDis[0], messageIdCount)
+            except peewee.DoesNotExist:
+                pass
 
-        messageProtocolEntity._id = messageGenId
+            messageProtocolEntity._id = messageGenId
         message = Message(
             id_gen = messageProtocolEntity.getId(),
             conversation = conversation,
